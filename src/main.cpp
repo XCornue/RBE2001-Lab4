@@ -20,38 +20,32 @@ void setup()
   motor.setup();
   motor.reset();
   delay(3000);
-  Serial.print("Time (ms)");
+  Serial.print("Effort");
   Serial.print("   ");
-  Serial.print("Position");
-  Serial.print("    ");
-  Serial.println("speedInRPM");
+  Serial.println("Count");
   delay(3000);
 }
 
 
-void loop()
+// void loop() //use this code to test the dead band once the motor is in the gripper
+// {
+//   motor.deadBandTestPos();
+//   //motor.deadBandTestNeg();
+//   delay(4000);
+//   motor.setEffort(0);
+//   exit;
+// }
+
+
+void loop() //this is what we ran when we had the move to function work perfect
 {
-  timeToPrint = millis() + sampleTime;
-  oldPosition = motor.getPosition();
-  while (buttonB.isPressed())
-  {
-    // The button is currently pressed.
-    motor.setEffort(motorEffort);
-    if ((now = millis()) > timeToPrint)
-    {
-      timeToPrint = now + sampleTime;
-      newPosition = motor.getPosition();
-      speedInRPM = newPosition-oldPosition/(millis()/1000);
-      Serial.print(now);
-      Serial.print("          ");
-      Serial.print(newPosition);
-      Serial.print("          ");
-      Serial.println(speedInRPM);
-      oldPosition = newPosition;
-      
-    }
-    
-  }
-    
+  motor.moveTo(-540); 
+
   motor.setEffort(0);
+  
 }
+
+// void loop() //this one to show the quadrature stuff working
+// {
+//     Serial.println(motor.getCount());
+// }
