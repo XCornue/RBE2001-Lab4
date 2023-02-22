@@ -3,8 +3,8 @@
 #include "BlueMotor.h"
 #include <servo32u4.h>
 
-
 BlueMotor motor;
+Romi32U4ButtonA buttonA;
 Romi32U4ButtonB buttonB;
 Servo32U4Pin5 jawServo;
 long timeToPrint = 0;
@@ -17,27 +17,41 @@ int CPR = 270;
 int motorEffort = 400;
 
 //Variables FIX VALUES!!!!
-int servoClosed = 1000; //Length of Pulse in Microseconds for closing
-int servoOpen = 1000; //Length of Pulse in Microseconds for opening
-int servoStop = 1000; //Length of Pulse in Microseconds for stopping
-int prevPositionVoltADC = 1000; //Whatever the ADC's previous value was
+float servoClosed = 1000000; //Length of Pulse in Microseconds for closing
+float servoOpen = 2000000; //Length of Pulse in Microseconds for opening
+float servoStop = 1500000; //Length of Pulse in Microseconds for stopping
+int prevPositionVoltADC = 0; //Whatever the ADC's previous value was
 int linPositionVoltADC = 1000; //Whatever the ADC value is currently
 int servoClosedVoltADC = 1000; //Whatever the ADC value is for when it is closed
 int servoOpenVoltADC = 1000; //Whatever the ADC value is for when it is open
 int printDelay = 500; //Delay of code
 int mode = 2; //Mode 0 is closing, Mode 1 is opening, Mode 2 is starting
 
+/*enum SERVOSTATE
+{
+  CONTINUOUS,
+  NOT_CONTINUOUS
+};*/
+
 void setup()
 {
   Serial.begin(9600);
   motor.setup();
   motor.reset();
-  jawServo.attach();
+  jawServo.setMinMaxMicroseconds(0,20000);
   delay(3000);
   Serial.print("Effort");
   Serial.print("   ");
   Serial.println("Count");
   delay(3000);
+}
+
+void open(){ //opens the servo
+  jawServo.writeMicroseconds(servoOpen); //starts opening
+  while(linPositionVoltADC <= (servoOpenVoltADC + 5)){ //when it is more closed than goal
+    linPositionVoltADC = analogRead(linPositionVoltADC); //sets for the check
+  }
+  jawServo.writeMicroseconds(servoStop); //stop when in position
 }
 
 void close(){ //closes the servo
@@ -52,12 +66,17 @@ void close(){ //closes the servo
   jawServo.writeMicroseconds(servoStop); //stop when in position
 }
 
-void open(){ //opens the servo
-  jawServo.writeMicroseconds(servoOpen); //starts opening
-  while(linPositionVoltADC <= (servoOpenVoltADC + 5)){ //when it is more closed than goal
-    linPositionVoltADC = analogRead(linPositionVoltADC); //sets for the check
-  }
-  jawServo.writeMicroseconds(servoStop); //stop when in position
+  //Continuous Servo Code
+void closeContinuous(){
+  jawServo.writeMicroseconds(2000);
+  delay(175);
+  jawServo.writeMicroseconds(0);
+}
+
+void openContinuous(){
+  jawServo.writeMicroseconds(1000);
+  delay(175);
+  jawServo.writeMicroseconds(0);
 }
 
 void change(){ //just used to change between opening and closing
@@ -69,26 +88,47 @@ void change(){ //just used to change between opening and closing
   }
 }
 
-void loop(){
-  jawServo.writeMicroseconds(servoStop); //don't know why it doesnt like writeMicroseconds, may have to ask a TA
-  delay(2000);
+/*void loop(){
+  
+  jawServo.writeMicroseconds(15000);
+}*/
+    
 
-  linPositionVoltADC = analogRead(linPositionVoltADC);
-  Serial.print("Intitial linPosition Volt ADC is ");
-  Serial.print(linPositionVoltADC);
-
-  if(buttonB.isPressed()){ //opens and closes when button is pressed, always opens first
-    change();
-
-    if(mode == 1){
-      open();
+  void loop(){
+    //Continuous Servo Code
+    if(buttonA.isPressed()){
+      openContinuous();
+      delay(1000);
     }
-
-    if(mode == 0){
-      close();
+  
+    if(buttonB.isPressed()){
+      closeContinuous();
+      delay(1000);
     }
+    jawServo.writeMicroseconds(0);
   }
-}
+
+  
+  /*void loop(){
+    jawServo.writeMicroseconds(servoOpen);
+    delay(2000);
+
+    linPositionVoltADC = analogRead(linPositionVoltADC);
+    Serial.print("Intitial linPosition Volt ADC is ");
+    Serial.print(linPositionVoltADC);
+
+    if(buttonB.isPressed()){ //opens and closes when button is pressed, always opens first
+      change();
+
+      if(mode == 1){
+        open();
+      }
+
+      if(mode == 0){
+        close();
+      }
+    }
+  }*/
 
 // void loop() //use this code to test the dead band once the motor is in the gripper
 // {
