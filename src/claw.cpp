@@ -5,12 +5,12 @@
 #include <servo32u4.h>
 
 //Variables FIX VALUES!!!!
-float servoClosed = 2500; //Length of Pulse in Microseconds for closing
-float servoOpen = 750; //Length of Pulse in Microseconds for opening
+float servoClosed = 2250; //2500; //Length of Pulse in Microseconds for closing
+float servoOpen = 1500; //750; //Length of Pulse in Microseconds for opening
 int doubleprevPositionVoltADC = -2;
 int prevPositionVoltADC = -1; //Whatever the ADC's previous value was
 int linPositionVoltADC = 0; //Whatever the ADC value is currently
-int servoClosedVoltADC = 437; //Whatever the ADC value is for when it is closed
+int servoClosedVoltADC = 422; //Whatever the ADC value is for when it is closed
 
 void open(Servo32U4Pin5 claw){ //opens the servo
   claw.writeMicroseconds(servoOpen); //starts opening

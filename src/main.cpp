@@ -36,30 +36,32 @@ void setup()
   delay(3000);
 }
 
-// void loop(){ //When button A is pressed, open. When button B is pressed, close. If stuck, open.
-//   if(buttonA.isPressed()){
-//     open(jawServo);
-//   }
+void loop(){ //When button A is pressed, open. When button B is pressed, close. If stuck, open.
+  if(buttonA.isPressed()){
+    open(jawServo);
+  }
 
-//   if(buttonB.isPressed()){
-//     close(jawServo);
-//   }
-// }
+  if(buttonB.isPressed()){
+    close(jawServo);
+  }
+  
+  Serial.println(analogRead(A0));
+}
     
 
-  void loop(){
-    //Continuous Servo Code
-    if(buttonA.isPressed()){
-      openContinuous(jawServo);
-      delay(1000);
-    }
+  // void loop(){
+  //   //Continuous Servo Code
+  //   if(buttonA.isPressed()){
+  //     openContinuous(jawServo);
+  //     delay(1000);
+  //   }
   
-    if(buttonB.isPressed()){
-      closeContinuous(jawServo);
-      delay(1000);
-    }
-    jawServo.writeMicroseconds(0);
-  }
+  //   if(buttonB.isPressed()){
+  //     closeContinuous(jawServo);
+  //     delay(1000);
+  //   }
+  //   jawServo.writeMicroseconds(0);
+  // }
 
   
   /*void loop(){
