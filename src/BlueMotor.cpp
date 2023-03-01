@@ -85,37 +85,39 @@ void BlueMotor::setEffort(int effort)
     }
 }
 
-void BlueMotor::setEffortWithoutDB(int effort) // accepts range from -400 to 400, needs to translate the input into the actual effort in the other function
+void BlueMotor::setEffortWithoutDB(int effort) // accepts range from -400 to 400, 
+                                               //needs to translate the input into the actual effort in the other function
+
 {
-    long eff;
-    if (effort > 0)
+    long eff; //temp variable
+    if (effort > 0) //if the effort is positive
     {
-        eff = round(mPos*effort + posDeadBand);
-        setEffort((int) eff, true);
+        eff = round(mPos*effort + posDeadBand); //adjust to get rid of deadzone
+        setEffort((int) eff, true); //set the effort to the new value
     }
-    else if (effort <0)
+    else if (effort <0) //if the effort is negative
     {
-        eff = round(mNeg*effort + negDeadBand);
-        setEffort((int) -eff, false);
+        eff = round(mNeg*effort + negDeadBand); //adjust to get rid of deadzone
+        setEffort((int) -eff, false); //set the effort to the new value
     } else 
     {
-        setEffort(0);
+        setEffort(0); //set effort to zero
     }
 }
 
 void BlueMotor::setEffort(int effort, bool clockwise)
 {
-    if (clockwise)
+    if (clockwise) //set motor to spin clockwise
     {
         digitalWrite(AIN1, HIGH);
         digitalWrite(AIN2, LOW);
     }
-    else
+    else //set motor to spin counterclockwise
     {
         digitalWrite(AIN1, LOW);
         digitalWrite(AIN2, HIGH);
     }
-    OCR1C = constrain(effort, 0, 400);
+    OCR1C = constrain(effort, 0, 400); //make the motor move at certain speed
 }
 
 void BlueMotor::deadBandTestPos() //attach blue motor to assembly for this test
@@ -149,15 +151,15 @@ void BlueMotor::moveTo(long target)  //Move to this encoder position within the 
                                      //note 540 counts per rev
                                      //tolerance of 3 counts
     long eff;
-    while((target-count)>= tolerance || (target-count)<= (-tolerance)){
-        eff = kp*(target - count);
-        setEffortWithoutDB((int) eff);
-        Serial.println("in loop");
-        Serial.print(count);
-    }
-    setEffort(0);
-    Serial.println("out of loop");
-    Serial.print(count);
+    while((target-count)>= tolerance || (target-count)<= (-tolerance)){ //while the target is not within the tolerance
+        eff = kp*(target - count); //the effort equals the target - count adjusted by a proportional value
+        setEffortWithoutDB((int) eff); //send the effort to the without deadband 
+        Serial.println("in loop"); //for testing
+        Serial.print(count); //for testing
+    } 
+    setEffort(0); //stop the motor
+    Serial.println("out of loop"); //for testing
+    Serial.print(count); //for testing
 }
 
 // // //perfect move to function (in our experiments)

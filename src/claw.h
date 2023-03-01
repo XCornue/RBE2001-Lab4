@@ -1,4 +1,3 @@
-#pragma once
 #include <servo32u4.h>
 
 void open(Servo32U4Pin5 claw);
