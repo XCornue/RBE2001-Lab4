@@ -241,17 +241,17 @@ void turnLeftReverse(int samplePeriod, LeftMotor motorLeft, RightMotor motorRigh
 }//Matt
 
 void turn(int turnCount, LeftMotor motorLeft, RightMotor motorRight, int instructions[9]) {
-  if (turnDirection[turnCount] == 0) {        //left, only power to right motor
+  if (instructions[turnCount] == 0) {        //left, only power to right motor
     turnLeft(400, motorLeft, motorRight);
     return;
-  } else if (turnDirection[turnCount] == 2) {  //right, only power to left motor
+  } else if (instructions[turnCount] == 2) {  //right, only power to left motor
     turnRight(400, motorLeft, motorRight);
     return;
-  } else if (turnDirection[turnCount] == 3) {  //around CCW, half negative power to left motor, half positive power to right motor
+  } else if (instructions[turnCount] == 3) {  //around CCW, half negative power to left motor, half positive power to right motor
     reverseDirection(600, motorLeft, motorRight);
     timeUpdateCheck(100);
     return;
-  } else if (turnDirection[turnCount] == 4) {  //K turn, CCW
+  } else if (instructions[turnCount] == 4) {  //K turn, CCW
     turnRightReverse(400, motorLeft, motorRight);                             //negative speed to right motor until right reads line, then turn right till line
     turnRight(400, motorLeft, motorRight);                                    //this allows us to separate a consistent distance away from bags and delivery zones
     motorRight.setMotorEffort(0);                            
@@ -262,21 +262,21 @@ void turn(int turnCount, LeftMotor motorLeft, RightMotor motorRight, int instruc
     timeUpdateCheck(100);
     return;
   }
-  else if (turnDirection[turnCount] == 5) {  //K turn, CW, not used, written in case testing might require opposite k turn
+  else if (instructions[turnCount] == 5) {  //K turn, CW, not used, written in case testing might require opposite k turn
     turnLeftReverse(400, motorLeft, motorRight);                            //negative speed to left until left reads line, then turn left till line
     turnLeft(400, motorLeft, motorRight);
     return;
-  } else if (turnDirection[turnCount] == 6) {  //turn right 90, negative speed to right motor until left sensor detects line
+  } else if (instructions[turnCount] == 6) {  //turn right 90, negative speed to right motor until left sensor detects line
     turnRightReverse(400, motorLeft,  motorRight);
     return;
-  } else if (turnDirection[turnCount] == 1) {  //straight
+  } else if (instructions[turnCount] == 1) {  //straight
     motorLeft.setMotorEffort(defaultSpeed);
     motorRight.setMotorEffort(defaultSpeed);
     timeUpdateCheck(120);               //skip over line, since only called at 4 point intersection it had to drive over the intersection without detecting it again
     motorLeft.setMotorEffort(0);              //dead reckoning necessary since, depending on surface, speed, and presence of bag, momentum could carry romi over intersection, meaning a detect intersection gone function wouldnt always work
     motorRight.setMotorEffort(0);
     return;
-  } else if (turnDirection[turnCount] == 6) { //since this will never run without an intersection detected, this isn't needed but its there just in case
+  } else if (instructions[turnCount] == 6) { //since this will never run without an intersection detected, this isn't needed but its there just in case
     return;
   }
 }//Matt

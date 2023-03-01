@@ -41,10 +41,9 @@ bool replacementComplete = false;
 int step = 0;
 
 enum ROBOT_STATE{
-  START_1,
-  START_2,
-  RESUME,
-  WAITING
+  WAITING,
+  PATHA,
+  PATHB
 };
 
 enum COURSE{
@@ -57,11 +56,29 @@ enum COURSE{
 };
 
 ROBOT_STATE robotState = WAITING;
-COURSE courseState = PAUSING;
+COURSE courseState = LINE_FOLLOWING;
+
+void ISRsa(){
+  if(robotState == PATHA){
+    jawServo.writeMicroseconds(analogRead(A0));
+  }
+  if(robotState == PATHB){
+    jawServo.writeMicroseconds(0);
+  }
+  motorLeft.setMotorEffort(0);
+  motorRight.setMotorEffort(0);
+  while(1==1){
+    if(decoder.getKeyCode(remote0)){
+      break;
+    }
+  }
+  
+}
 
 void setup()
 {
   Serial.begin(9600);
+  attachInterrupt(decoder.getKeyCode(remoteStopMode), ISRsa, RISING);
   motor.setup();
   motor.reset();
   jawServo.setMinMaxMicroseconds(0,20000);
@@ -69,10 +86,7 @@ void setup()
   motorLeft.init();
   motorRight.init();
   delay(3000);
-  Serial.print("Effort");
-  Serial.print("   ");
-  Serial.println("Count");
-  delay(3000);
+  Serial.println("ON");
 }
 
 // void loop(){ //When button A is pressed, open. When button B is pressed, close. If stuck, open.
@@ -152,25 +166,25 @@ void setup()
 void updateStateMachine() {
   switch (robotState) {
     case WAITING:                           //waits to start until button press
-      int turncount = 0;
-      int prevLocationWanted = 0;
-      int locationWanted = 2;
-      bool openPosition = true;
-      bool replacementComplete = false;
+    {
+      turncount = 0;
+      prevLocationWanted = 0;
+      locationWanted = 2;
+      openPosition = true;
+      replacementComplete = false;
       while (decoder.getKeyCode() == remote1) {
         open(jawServo);
-        robotState = START_1;
+        robotState = PATHA;
       }
       while (decoder.getKeyCode() == remote2){
         openContinuous(jawServo);
-        robotState = START_2;
-      }
-      while (decoder.getKeyCode() == remote3){
-        robotState = RESUME;
+        robotState = PATHB;
       }
       break;
+      }
 
-    case START_1:
+    case PATHA:
+    {
       switch (courseState){
         case SERVO:
           if(openPosition == true){
@@ -263,7 +277,7 @@ void updateStateMachine() {
             replacementComplete = true;
           }
           if(turncount == 7){
-            locationWanted == 7;
+            locationWanted = 7;
           }
         break;
 
@@ -281,124 +295,119 @@ void updateStateMachine() {
         break;
       }
       break;
+    }
 
-    case START_2:
+    case PATHB:
+    {
       switch (courseState){
-        switch (courseState){
-          case SERVO:
-            if(openPosition == true){
-              close(jawServo);
-              openPosition = false;
-            }
-            else if(openPosition == false){
-              open(jawServo);
-              openPosition = true;
-            }
-            if(prevLocationWanted == 4){
-              courseState = PAUSING;
-              break;
-            }
+        case SERVO:
+          if(openPosition == true){
+            close(jawServo);
+            openPosition = false;
+          }
+          else if(openPosition == false){
+            open(jawServo);
+            openPosition = true;
+          }
+          if(prevLocationWanted == 4){
+            courseState = PAUSING;
+            break;
+          }
+          locationWanted = 2;
+          courseState = BLUE_MOTOR;
+        break;
+
+        case BLUE_MOTOR:
+          if(locationWanted == 2 && prevLocationWanted != 1){
+            motor.moveTo(clearance);
+            prevLocationWanted = locationWanted;
+            locationWanted = 1;
+            courseState = LINE_FOLLOWING;
+          }
+
+          else if(locationWanted == 1){
+            prevLocationWanted = locationWanted;
             locationWanted = 2;
-            courseState = BLUE_MOTOR;
-          break;
-
-          case BLUE_MOTOR:
-            if(locationWanted == 2 && prevLocationWanted != 1){
-              motor.moveTo(clearance);
-              prevLocationWanted = locationWanted;
-              locationWanted = 1;
-              courseState = LINE_FOLLOWING;
-            }
-
-            else if(locationWanted == 1){
-              prevLocationWanted = locationWanted;
-              locationWanted = 2;
-              motor.moveTo(twentyFive);
-              courseState = SERVO;
-            }
+            motor.moveTo(twentyFive);
+            courseState = SERVO;
+          }
           
-            else if(locationWanted == 4){
-              prevLocationWanted = locationWanted;
-              locationWanted = 2;
-              motor.moveTo(flat);
-              courseState = SERVO;
-            }
+          else if(locationWanted == 4){
+            prevLocationWanted = locationWanted;
+            locationWanted = 2;
+            motor.moveTo(flat);
+            courseState = SERVO;
+          }
 
-            else{
-              motor.moveTo(clearance);
-              prevLocationWanted = locationWanted;
-              locationWanted = 4;
-              courseState = LINE_FOLLOWING;
-            }
-          break;
+          else{
+            motor.moveTo(clearance);
+            prevLocationWanted = locationWanted;
+            locationWanted = 4;
+            courseState = LINE_FOLLOWING;
+          }
+        break;
 
-          case LINE_FOLLOWING:
-            followLine(motorLeft, motorRight);                         //follows the line using p control
-            if (intersectionDetected(25)) {       //when an intersection is detected, romi stops, waits 300ms, then switches to turning
-              motorRight.setMotorEffort(0);             //the count of the intersections determines which way the romi is to turn, determined in turn()
-              motorLeft.setMotorEffort(0);
-              timeUpdateCheck(300);
-              courseState = TURNING;
-              break;
-            }
-
-            if (ultrasonic.getDistance() == 10 && locationWanted == 1 && replacementComplete == false){
-              courseState = BLUE_MOTOR;
-              break;
-            }
-
-            if (ultrasonic.getDistance() == 10 && locationWanted == 2 && replacementComplete == false){
-             courseState = BLUE_MOTOR;
-              break;
-            }
-
-            if (ultrasonic.getDistance() == 10 && locationWanted == 4 && replacementComplete == false){
-              courseState = BLUE_MOTOR;
-              break;
-            }
-
-          if (ultrasonic.getDistance() == 10 && locationWanted == 4 && replacementComplete == true){
+        case LINE_FOLLOWING:
+          followLine(motorLeft, motorRight);                         //follows the line using p control
+          if (intersectionDetected(25)) {       //when an intersection is detected, romi stops, waits 300ms, then switches to turning
+            motorRight.setMotorEffort(0);             //the count of the intersections determines which way the romi is to turn, determined in turn()
+            motorLeft.setMotorEffort(0);
+            timeUpdateCheck(300);
             courseState = TURNING;
             break;
           }
 
-            if (ultrasonic.getDistance() == 10 && locationWanted == 7){
-              robotState = WAITING;
-              break;
-            }
+          if (ultrasonic.getDistance() == 10 && locationWanted == 1 && replacementComplete == false){
+            courseState = BLUE_MOTOR;
+            break;
+          }
 
-          break;
+          if (ultrasonic.getDistance() == 10 && locationWanted == 2 && replacementComplete == false){
+           courseState = BLUE_MOTOR;
+            break;
+          }
 
-          case TURNING:
-            turn(turncount, motorLeft, motorRight, turnDirectionsTwo);
-            turncount++;
-            if(turncount == 5){
-              replacementComplete = true;
-            }
-            if(turncount == 7){
-              locationWanted == 7;
-            }
-          break;
+          if (ultrasonic.getDistance() == 10 && locationWanted == 4 && replacementComplete == false){
+            courseState = BLUE_MOTOR;
+            break;
+          }
 
-          case PAUSING:
-            if(decoder.getKeyCode() == remotePlayPause){
-              close(jawServo);           
-              locationWanted = 2;
-              courseState = BLUE_MOTOR;
-            }
-          break;
-        
-          case MOVE_TO_LINE:
-            moveUntilLine(motorLeft, motorRight);
-            courseState = TURNING;
+        if (ultrasonic.getDistance() == 10 && locationWanted == 4 && replacementComplete == true){
+          courseState = TURNING;
           break;
         }
+
+          if (ultrasonic.getDistance() == 10 && locationWanted == 7){
+            robotState = WAITING;
+            break;
+          }
+        break;
+
+        case TURNING:
+          turn(turncount, motorLeft, motorRight, turnDirectionsTwo);
+          turncount++;
+          if(turncount == 5){
+            replacementComplete = true;
+          }
+          if(turncount == 7){
+            locationWanted = 7;
+          }
+        break;
+
+        case PAUSING:
+          if(decoder.getKeyCode() == remotePlayPause){
+            close(jawServo);           
+            locationWanted = 2;              
+            courseState = BLUE_MOTOR;
+          }
+        break;
+        
+        case MOVE_TO_LINE:
+          moveUntilLine(motorLeft, motorRight);
+          courseState = TURNING;
         break;
       }
       break;
-
-    case RESUME:
-      
-      break;
+      }
   }
 }
