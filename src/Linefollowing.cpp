@@ -74,7 +74,7 @@ void followLine(LeftMotor motorLeft, RightMotor motorRight) {
     motorLeft.setMotorEffort(defaultSpeed);
     motorRight.setMotorEffort(defaultSpeed);
   }
-}//Martin
+}
 
 //TURN HELPERS----------------------------------------------------------------------------
 

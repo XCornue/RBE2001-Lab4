@@ -21,6 +21,12 @@ Rangefinder ultrasonic(17, 12);
 //line following variables
 int motorEffort = 400;
 
+//ultrasonic sensor variables
+int position1 = 10;
+int position2 = 15;
+int position4 = 10;
+int position7 = 15;
+
 //where we want the blue motor
 int clearance = 1000;
 int twentyFive = 800;
@@ -59,16 +65,16 @@ ROBOT_STATE robotState = WAITING;
 COURSE courseState = LINE_FOLLOWING;
 
 void ISRsa(){
-  if(robotState == PATHA){
-    jawServo.writeMicroseconds(analogRead(A0));
+  if(robotState == PATHA){ //if using the non-continuous servo
+    jawServo.writeMicroseconds(analogRead(A0)); //stop in place
   }
-  if(robotState == PATHB){
-    jawServo.writeMicroseconds(0);
+  if(robotState == PATHB){ //if using the continuous servo
+    jawServo.writeMicroseconds(0); //stop in place
   }
-  motorLeft.setMotorEffort(0);
+  motorLeft.setMotorEffort(0); //stop moving
   motorRight.setMotorEffort(0);
-  while(1==1){
-    if(decoder.getKeyCode(remote0)){
+  while(1==1){ //stay here until
+    if(decoder.getKeyCode(remote0)){ //remotely brought out of the while loop
       break;
     }
   }
@@ -165,28 +171,28 @@ void setup()
 
 void updateStateMachine() {
   switch (robotState) {
-    case WAITING:                           //waits to start until button press
+    case WAITING: //waits to start until button press
     {
-      turncount = 0;
+      turncount = 0;  //resets variables
       prevLocationWanted = 0;
       locationWanted = 2;
       openPosition = true;
       replacementComplete = false;
-      while (decoder.getKeyCode() == remote1) {
-        open(jawServo);
+      while (decoder.getKeyCode() == remote1) { //if 1 is pressed
+        open(jawServo); //open jaw and go on path A
         robotState = PATHA;
       }
-      while (decoder.getKeyCode() == remote2){
-        openContinuous(jawServo);
+      while (decoder.getKeyCode() == remote2){ //if 2 is pressed
+        openContinuous(jawServo); //open jaw and go on path B
         robotState = PATHB;
       }
       break;
       }
 
-    case PATHA:
+    case PATHA: //path A (right side, non-continuous)
     {
       switch (courseState){
-        case SERVO:
+        case SERVO: //Handles the opening and closing of the jaw, know which to do based on a bool
           if(openPosition == true){
             close(jawServo);
             openPosition = false;
@@ -195,101 +201,107 @@ void updateStateMachine() {
             open(jawServo);
             openPosition = true;
           }
-          if(prevLocationWanted == 4){
+          if(prevLocationWanted == 4){ //if we go to servo when wanting to be in position 4, gp tp pausing
             courseState = PAUSING;
             break;
           }
-          locationWanted = 2;
+          locationWanted = 2; //location wanted changes to 2 (line up position)
           courseState = BLUE_MOTOR;
         break;
 
-        case BLUE_MOTOR:
-          if(locationWanted == 2 && prevLocationWanted != 1){
-            motor.moveTo(clearance);
-            prevLocationWanted = locationWanted;
+        case BLUE_MOTOR: //controls the blue motor, based on where we are going and previous location at
+          if(locationWanted == 2 && prevLocationWanted != 1){ //if going to location 2 and was at location 4
+            motor.moveTo(clearance); //raise motor to clearance
+            prevLocationWanted = locationWanted; //update locations
             locationWanted = 1;
             courseState = LINE_FOLLOWING;
           }
 
-          else if(locationWanted == 1){
-            prevLocationWanted = locationWanted;
+          else if(locationWanted == 1){ //if going to location 1
+            prevLocationWanted = locationWanted; //update locations
             locationWanted = 2;
-            motor.moveTo(twentyFive);
+            motor.moveTo(twentyFive);  //lower to twentyFive angle
             courseState = SERVO;
           }
           
-          else if(locationWanted == 4){
-            prevLocationWanted = locationWanted;
+          else if(locationWanted == 4){ //if going to location 4
+            prevLocationWanted = locationWanted; //update locations
             locationWanted = 2;
-            motor.moveTo(flat);
+            motor.moveTo(flat); //lower to flat angle
             courseState = SERVO;
           }
 
-          else{
-            motor.moveTo(clearance);
-            prevLocationWanted = locationWanted;
+          else{  //if at position 2 and was at location 1
+            motor.moveTo(clearance); //raise motor to clearance
+            prevLocationWanted = locationWanted; //update locations
             locationWanted = 4;
             courseState = LINE_FOLLOWING;
           }
         break;
 
-        case LINE_FOLLOWING:
-          followLine(motorLeft, motorRight);                         //follows the line using p control
-          if (intersectionDetected(25)) {       //when an intersection is detected, romi stops, waits 300ms, then switches to turning
-            motorRight.setMotorEffort(0);             //the count of the intersections determines which way the romi is to turn, determined in turn()
+        case LINE_FOLLOWING: //follows lines and stops when at location or at intersection
+          followLine(motorLeft, motorRight); //follows the line using p control
+          if (intersectionDetected(25)) { //when an intersection is detected, romi stops, waits 300ms, then switches to turning
+            motorRight.setMotorEffort(0);//the count of the intersections determines which way the romi is to turn, determined in turn()
             motorLeft.setMotorEffort(0);
             timeUpdateCheck(300);
             courseState = TURNING;
             break;
           }
 
-          if (ultrasonic.getDistance() == 10 && locationWanted == 1 && replacementComplete == false){
+          if (ultrasonic.getDistance() == position1 && locationWanted == 1 && replacementComplete == false){
+            //stops when going to location 1 for replacement
             courseState = BLUE_MOTOR;
             break;
           }
 
-          if (ultrasonic.getDistance() == 10 && locationWanted == 2 && replacementComplete == false){
+          if (ultrasonic.getDistance() == position2 && locationWanted == 2 && replacementComplete == false){
+            //stops when going to location 2 for replacement
             courseState = BLUE_MOTOR;
             break;
           }
 
-          if (ultrasonic.getDistance() == 10 && locationWanted == 4 && replacementComplete == false){
+          if (ultrasonic.getDistance() == position4 && locationWanted == 4 && replacementComplete == false){
+            //stops when going to location 4 for replacement
             courseState = BLUE_MOTOR;
             break;
           }
 
-          if (ultrasonic.getDistance() == 10 && locationWanted == 4 && replacementComplete == true){
+          if (ultrasonic.getDistance() == position4 && locationWanted == 4 && replacementComplete == true){
+            //stops when going to location 4 for after replacement is complete
             courseState = TURNING;
             break;
           }
 
-          if (ultrasonic.getDistance() == 10 && locationWanted == 7){
+          if (ultrasonic.getDistance() == position7 && locationWanted == 7){
+            //stops when going to location 7 to be swapped out
             robotState = WAITING;
             break;
           }
 
         break;
 
-        case TURNING:
-          turn(turncount, motorLeft, motorRight, turnDirectionsOne);
+        case TURNING: //turns based on turncount and turnDirections
+          turn(turncount, motorLeft, motorRight, turnDirectionsOne); //turns
           turncount++;
-          if(turncount == 5){
+          if(turncount == 5){ //if turned 5 times, replacement is completed
             replacementComplete = true;
           }
-          if(turncount == 7){
+          if(turncount == 7){ //after turning 7 times, go to the other side
             locationWanted = 7;
           }
         break;
 
-        case PAUSING:
-          if(decoder.getKeyCode() == remotePlayPause){
-            close(jawServo);           
+        case PAUSING: //waiting for input
+          if(decoder.getKeyCode() == remotePlayPause){ //when button is pressed, close servo and begin moving
+            close(jawServo);
+            openPosition = false;           
             locationWanted = 2;
             courseState = BLUE_MOTOR;
           }
         break;
         
-        case MOVE_TO_LINE:
+        case MOVE_TO_LINE: //move until a line is found
           moveUntilLine(motorLeft, motorRight);
           courseState = TURNING;
         break;
@@ -297,16 +309,16 @@ void updateStateMachine() {
       break;
     }
 
-    case PATHB:
+    case PATHB: //very similar to PATHA, just using continuous servo and inverted turns
     {
       switch (courseState){
         case SERVO:
           if(openPosition == true){
-            close(jawServo);
+            closeContinuous(jawServo);
             openPosition = false;
           }
           else if(openPosition == false){
-            open(jawServo);
+            openContinuous(jawServo);
             openPosition = true;
           }
           if(prevLocationWanted == 4){
@@ -357,27 +369,27 @@ void updateStateMachine() {
             break;
           }
 
-          if (ultrasonic.getDistance() == 10 && locationWanted == 1 && replacementComplete == false){
+          if (ultrasonic.getDistance() == position1 && locationWanted == 1 && replacementComplete == false){
             courseState = BLUE_MOTOR;
             break;
           }
 
-          if (ultrasonic.getDistance() == 10 && locationWanted == 2 && replacementComplete == false){
+          if (ultrasonic.getDistance() == position2 && locationWanted == 2 && replacementComplete == false){
            courseState = BLUE_MOTOR;
             break;
           }
 
-          if (ultrasonic.getDistance() == 10 && locationWanted == 4 && replacementComplete == false){
+          if (ultrasonic.getDistance() == position4 && locationWanted == 4 && replacementComplete == false){
             courseState = BLUE_MOTOR;
             break;
           }
 
-        if (ultrasonic.getDistance() == 10 && locationWanted == 4 && replacementComplete == true){
+        if (ultrasonic.getDistance() == position4 && locationWanted == 4 && replacementComplete == true){
           courseState = TURNING;
           break;
         }
 
-          if (ultrasonic.getDistance() == 10 && locationWanted == 7){
+          if (ultrasonic.getDistance() == position7 && locationWanted == 7){
             robotState = WAITING;
             break;
           }
@@ -396,7 +408,8 @@ void updateStateMachine() {
 
         case PAUSING:
           if(decoder.getKeyCode() == remotePlayPause){
-            close(jawServo);           
+            closeContinuous(jawServo);
+            openPosition = false;            
             locationWanted = 2;              
             courseState = BLUE_MOTOR;
           }
